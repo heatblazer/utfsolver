@@ -7,4 +7,9 @@ SOURCES += \
         main.cpp
 
 DISTFILES += \
-    data.txt
+    data.txt \
+    data_bigmix.txt \
+    data_err.txt \
+    data_mix.txt \
+    data_noutf.txt \
+    data_ok.txt
