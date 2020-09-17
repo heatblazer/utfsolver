@@ -12,4 +12,5 @@ DISTFILES += \
     data_err.txt \
     data_mix.txt \
     data_noutf.txt \
-    data_ok.txt
+    data_ok.txt \
+    readme.md
