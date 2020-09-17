@@ -1,0 +1,1 @@
+detects a broken utf8 patterns and fixes them
