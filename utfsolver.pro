@@ -14,3 +14,5 @@ DISTFILES += \
     data_noutf.txt \
     data_ok.txt \
     readme.md
+
+

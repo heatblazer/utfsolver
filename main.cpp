@@ -9,6 +9,13 @@ using namespace std;
 
 
 namespace  {
+
+    struct datachunk // POD type
+    {
+        char* data;
+        size_t size;
+    };
+
     char* load_data(const char* fname, size_t* outsize)
     {
         FILE* fp = fopen(fname, "rb");
@@ -26,6 +33,13 @@ namespace  {
         }
         fclose(fp);
         return  dat;
+    }
+
+    struct datachunk load_data_ex(const char* fname)
+    {
+        struct datachunk d;
+        d.data = load_data(fname, &d.size);
+        return d;
     }
 
 }
@@ -219,18 +233,16 @@ public:
 void test(const char* fname)
 {
     puts("----- begin test  ------");
-
-    size_t size = 0;
-    char* data = load_data(fname, &size);
-    if (data) {
+    struct datachunk d = load_data_ex(fname);
+    if (d.data) {
         printf("Data ok\r\n");
-        UtfSolver solver{data, size};
+        UtfSolver solver{d.data, d.size};
         solver.resolve();
         std::cout << solver.fixed() << "\r\n";
     } else {
         printf("err in data\r\n");
     }
-    free(data);
+    free(d.data);
     puts("----- end test ------");
 }
 
