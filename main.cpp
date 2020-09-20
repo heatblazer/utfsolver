@@ -81,12 +81,6 @@ private:
 
     static inline bool is_utf8_sequence(const unsigned char d) { return ((d >> 6) == 2); }
 
-    bool valid_sequence(const char* it, utfstate state)
-    {
-        size_t i = 1;
-        for (; i < state && UtfSolver::is_utf8_sequence(it[i]); i++);
-        return i + 1 == state;
-    }
 
     /**
          * @brief utf8heuristics
