@@ -110,7 +110,7 @@ private:
                 }
                 else
                     {
-                    encode(it + stridx, s, m_fixData);
+                    encode(it + stridx, m_size-stridx, m_fixData);
                     stridx += s;
                 }
             }
@@ -243,7 +243,7 @@ void test(const char* fname)
 
 int main(void)
 {
-    test("testcase.txt");
+    test("data_err.txt");
 
     return 0;
 }
