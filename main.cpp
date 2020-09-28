@@ -177,11 +177,12 @@ protected:
     {
         bool isOk = true;
         if (offset >= m_size) return 0; //bound check
-        for (size_t i = 1; i < state; i++)
+        for (size_t i = 1; i < state; i++) {
             if (!is_utf8_sequence(stream[i])) {
                 isOk = false;
                 break;
             }
+        }
 
         return  isOk ? (size_t)state : 0;
     }
@@ -243,7 +244,7 @@ void test(const char* fname)
 
 int main(void)
 {
-    test("data_err.txt");
+    test("test99.txt");
 
     return 0;
 }
