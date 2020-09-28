@@ -243,7 +243,7 @@ void test(const char* fname)
 
 int main(void)
 {
-    test("test99.txt");
+    test("testcase.txt");
 
     return 0;
 }
