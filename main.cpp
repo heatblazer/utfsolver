@@ -176,7 +176,7 @@ protected:
     virtual size_t validate_pattern_ex(const char* stream, utfstate state, size_t offset)
     {
         bool isOk = true;
-        if (offset >= m_size) return 0; //bound check
+        if (offset+state >= m_size) return 0; //bound check
         for (size_t i = 1; i < state; i++) {
             if (!is_utf8_sequence(stream[i])) {
                 isOk = false;
