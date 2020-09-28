@@ -195,9 +195,9 @@ protected:
     {
         for (size_t i = 0; i < n; i++) {
             char hexbuff[16]; /* lower size */
-            unsigned int t = (unsigned int)it[i];
+            unsigned char t = (unsigned char)it[i];
             memset(hexbuff, 0, sizeof(hexbuff));
-            snprintf(hexbuff, sizeof(hexbuff), "&#x%X;", ((t << 24) & 0xFF000000) >> 24);
+            snprintf(hexbuff, sizeof(hexbuff), "&#x%X;", t);
             out.append(hexbuff);
         }
     }
@@ -243,7 +243,7 @@ void test(const char* fname)
 
 int main(void)
 {
-    test("data_err.txt");
+    test("test99.txt");
 
     return 0;
 }

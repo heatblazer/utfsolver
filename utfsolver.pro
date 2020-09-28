@@ -13,6 +13,9 @@ DISTFILES += \
     data_mix.txt \
     data_noutf.txt \
     data_ok.txt \
-    readme.md
+    readme.md \
+    test100.txt \
+    test99.txt \
+    testcase.txt
 
 
