@@ -5,8 +5,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring> //memset
+
+#include <nmmintrin.h>
+
 using namespace std;
 
+
+#define likely(x)      __builtin_expect(!!(x), 1)
+#define unlikely(x)    __builtin_expect(!!(x), 0)
 
 namespace  {
 
@@ -74,19 +80,15 @@ private:
 
     size_t m_size;
 
-    static inline bool is_starting_utf8(const unsigned char d)
-    {
-        return (_SUTF1(d) || _SUTF2(d) || _SUTF3(d) || _SUTF4(d)) || _SUTF5(d) || _SUTF6(d);
-    }
 
     static inline bool is_utf8_sequence(const unsigned char d) { return ((d >> 6) == 2); }
 
 
     /**
-         * @brief utf8heuristics
-         * @param predicts the broken UTF stream
-         * @return - no return
-         */
+     * @brief utf8heuristics
+     * @param predicts the broken UTF stream
+     * @return - no return
+     */
     void utf8heuristics(const char* it, size_t len)
     {
         size_t ncount=0, tmpidx = 0, stridx = 0;
@@ -98,18 +100,22 @@ private:
         {
             unsigned char d = it[stridx];
             utfstate s = state(d);
+
             if (s != UNKNOWN)
-                {
+            {
                 size_t idx = validate_pattern_ex(it + stridx, s, stridx);
+
                 if (idx == s)
                 {
+
                     /* all ok increment index for the next utf8 */
-                    for (size_t i = 0; i < idx; i++)
-                            m_fixData += it[stridx + i]; //refill
-                        stridx += idx; // go to next
+                    for (size_t i = 0; i < idx; i++) {
+                            m_fixData += it[stridx + i];//refill
+                    }
+                    stridx += idx; // go to next
                 }
                 else
-                    {
+                {
                     encode(it + stridx, m_size-stridx, m_fixData);
                     stridx += s;
                 }
@@ -153,7 +159,7 @@ private:
             {
             state = UTF5;
         }
-        else if (_SUTF5(d))
+        else if (_SUTF6(d))
             {
             state = UTF6;
         }
@@ -167,16 +173,16 @@ private:
 
 protected:
     // some seciton in case we need to override the default implementatnion ov pattern validation ...
-            /**
-         * @brief validate_pattern
-         * @param begin of a possible utf sequence
-         * @param state of utf sequence 1,2,3,4,5,6 bytes
-         * @return index pointer + offset to the end of the valid utf strem or the same pointer if not valid
-         */
+    /**
+     * @brief validate_pattern
+     * @param begin of a possible utf sequence
+     * @param state of utf sequence 1,2,3,4,5,6 bytes
+     * @return index pointer + offset to the end of the valid utf strem or the same pointer if not valid
+     */
     virtual size_t validate_pattern_ex(const char* stream, utfstate state, size_t offset)
     {
         bool isOk = true;
-        if (offset+state >= m_size) return 0; //bound check
+        if (offset+state > m_size) return 0; //bound check
         for (size_t i = 1; i < state; i++) {
             if (!is_utf8_sequence(stream[i])) {
                 isOk = false;
@@ -188,10 +194,10 @@ protected:
     }
 
     /**
-         * @brief encoder - you can override if you need other escape pattern
-         * @param it - iterator to a nonprintable chars
-         * @param inout - ref to the buffer of fixed characters
-         */
+     * @brief encoder - you can override if you need other escape pattern
+     * @param it - iterator to a nonprintable chars
+     * @param inout - ref to the buffer of fixed characters
+    */
     virtual void encode(const char* it, size_t n, std::string& out)
     {
         for (size_t i = 0; i < n; i++) {
@@ -206,7 +212,10 @@ protected:
 
 public:
     //TODO: add size ctor
-    UtfSolver(const std::string& data, const size_t size) : p_data(data.c_str()), m_size(size) {}
+    UtfSolver(const std::string& data, const size_t size) : p_data(data.c_str()), m_size(size)
+    {
+        m_fixData.reserve(1024);
+    }
 
     UtfSolver(const char* data, const size_t size) : p_data(data), m_size(size)  {}
 
@@ -215,6 +224,8 @@ public:
     const char* data() const { return p_data;  }
 
     const char* fixed() const { return m_fixData.c_str();  }
+
+    size_t size2() const {return  m_fixData.size();}
 
     size_t size() const { return m_size;  }
 
@@ -227,24 +238,58 @@ public:
 
 void test(const char* fname)
 {
-    puts("----- begin test  ------");
+//    puts("----- begin test  ------");
     struct datachunk d = load_data_ex(fname);
     if (d.data) {
         printf("Data ok\r\n");
         UtfSolver solver{d.data, d.size};
         solver.resolve();
         std::cout << solver.fixed() << "\r\n";
+
+
+        UtfSolver validator {solver.fixed(), solver.size2()};
+
+        validator.resolve();
+
+        std::cout << validator.fixed() << "\r\n";
+
+
     } else {
         printf("err in data\r\n");
     }
     free(d.data);
-    puts("----- end test ------");
+//    puts("----- end test ------");
 }
 
 
 int main(void)
 {
-    test("test99.txt");
+#if 0
+
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    puts("---------------------------------------------------------");
+
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
+    puts("---------------------------------------------------------");
+
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
+    puts("---------------------------------------------------------");
+
+#endif
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
+    puts("---------------------------------------------------------");
+
+
 
     return 0;
 }
