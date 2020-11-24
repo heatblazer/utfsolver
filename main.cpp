@@ -10,10 +10,10 @@
 
 using namespace std;
 
-
-#define likely(x)      __builtin_expect(!!(x), 1)
-#define unlikely(x)    __builtin_expect(!!(x), 0)
-
+#ifdef WIN32
+    #define likely(x)      __builtin_expect(!!(x), 1)
+    #define unlikely(x)    __builtin_expect(!!(x), 0)
+#endif
 namespace  {
 
     struct datachunk // POD type
@@ -242,16 +242,21 @@ void test(const char* fname)
     struct datachunk d = load_data_ex(fname);
     if (d.data) {
         printf("Data ok\r\n");
+
+
         UtfSolver solver{d.data, d.size};
+
+        std::cout << "[broken:]" << solver.data() << "\r\n";
+
         solver.resolve();
-        std::cout << solver.fixed() << "\r\n";
+        std::cout << "[fixed:]" << solver.fixed() << "\r\n";
 
 
         UtfSolver validator {solver.fixed(), solver.size2()};
 
         validator.resolve();
 
-        std::cout << validator.fixed() << "\r\n";
+        std::cout << "[check:]" << validator.fixed() << "\r\n";
 
 
     } else {
@@ -284,9 +289,9 @@ int main(void)
     puts("---------------------------------------------------------");
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
     puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
-    puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
+//    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+//    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
     puts("---------------------------------------------------------");
 
 
