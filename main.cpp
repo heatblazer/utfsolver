@@ -73,7 +73,7 @@ class UtfSolver
         UTF6,
         SIZE = UNKNOWN + UTF6
     };
-private:
+protected:
     const char* p_data; // aggregation
 
     std::string m_fixData;
@@ -140,34 +140,22 @@ private:
     {
         utfstate state = UTF1;
         if (_SUTF1(d))
-            {
             return  state;
-        }
-        if (_SUTF2(d))
-            {
+
+        if (_SUTF2(d)) {
             state = UTF2;
-        }
-        else if (_SUTF3(d))
-            {
+        } else if (_SUTF3(d)) {
             state = UTF3;
-        }
-        else if (_SUTF4(d))
-            {
+        } else if (_SUTF4(d)) {
             state = UTF4;
-        }
-        else if (_SUTF5(d))
-            {
+        } else if (_SUTF5(d)) {
             state = UTF5;
-        }
-        else if (_SUTF6(d))
-            {
+        } else if (_SUTF6(d)) {
             state = UTF6;
-        }
-        else
-            {
+        } else {
             state = UNKNOWN;
         }
-        //        printf("State is [%s]\r\n", gStates[(unsigned)state]);
+
         return state;
     }
 
@@ -217,9 +205,12 @@ public:
         m_fixData.reserve(1024);
     }
 
-    UtfSolver(const char* data, const size_t size) : p_data(data), m_size(size)  {}
+    UtfSolver(const char* data, const size_t size) : p_data(data), m_size(size)
+    {
+        m_fixData.reserve(1024);
+    }
 
-    ~UtfSolver() /*noexcept*/ {} // not supported
+    virtual ~UtfSolver() /*noexcept*/ {} // not supported
 
     const char* data() const { return p_data;  }
 
@@ -236,28 +227,63 @@ public:
 };
 
 
+
+void test_formatting(const char* fname)
+{
+    struct UtfSolverEx : public UtfSolver
+    {
+        UtfSolverEx(const std::string& data, const size_t size)
+            : UtfSolver{data, size} { }
+
+        UtfSolverEx(const char* data, const size_t size)
+            : UtfSolver{data, size} { }
+
+    protected:
+        virtual void encode(const char* it, size_t n, std::string& out) override
+        {
+            for (size_t i = 0; i < n; i++) {
+                char hexbuff[16]; /* lower size */
+                unsigned char t = (unsigned char)it[i];
+                memset(hexbuff, 0, sizeof(hexbuff));
+                snprintf(hexbuff, sizeof(hexbuff), "[%d]", t);
+                out.append(hexbuff);
+            }
+        }
+    };
+
+
+    std::cout << "Test overriden formatting...\r\n";
+    struct datachunk d = load_data_ex(fname);
+    if (d.data) {
+        printf("Data ok\r\n");
+        UtfSolverEx solver {d.data, d.size};
+        solver.resolve();
+        std::cout << "[fixed: ]" << solver.fixed();
+        std::cout << "\r\n";
+    }
+}
+
+
 void test(const char* fname)
 {
+
 //    puts("----- begin test  ------");
     struct datachunk d = load_data_ex(fname);
     if (d.data) {
         printf("Data ok\r\n");
 
-
         UtfSolver solver{d.data, d.size};
 
-        std::cout << "[broken:]" << solver.data() << "\r\n";
+        std::cout << "[broken:] " << solver.data() << "\r\n";
 
         solver.resolve();
-        std::cout << "[fixed:]" << solver.fixed() << "\r\n";
-
+        std::cout << "[fixed:] " << solver.fixed() << "\r\n";
 
         UtfSolver validator {solver.fixed(), solver.size2()};
 
         validator.resolve();
 
-        std::cout << "[check:]" << validator.fixed() << "\r\n";
-
+        std::cout << "[check:] " << validator.fixed() << "\r\n";
 
     } else {
         printf("err in data\r\n");
@@ -266,25 +292,27 @@ void test(const char* fname)
 //    puts("----- end test ------");
 }
 
-
 int main(void)
 {
-#if 0
+#if 1
 
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
+    test("test100.txt");
+    test_formatting("test100.txt");
     puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
+    test("test99.txt");
+    test_formatting("test99.txt");
     puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    //test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    //puts("---------------------------------------------------------");
+
+    test("data_err.txt");
+    test_formatting("data_err.txt");
     puts("---------------------------------------------------------");
 
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
-    puts("---------------------------------------------------------");
+    //test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
+    //puts("---------------------------------------------------------");
 
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
-    puts("---------------------------------------------------------");
-
-#endif
+#else
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
     puts("---------------------------------------------------------");
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
@@ -294,7 +322,6 @@ int main(void)
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
     puts("---------------------------------------------------------");
 
-
-
+#endif
     return 0;
 }
