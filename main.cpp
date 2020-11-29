@@ -5,15 +5,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring> //memset
-
 #include <nmmintrin.h>
+#include <bits/stdc++.h>
 
 using namespace std;
 
-#ifdef WIN32
-    #define likely(x)      __builtin_expect(!!(x), 1)
-    #define unlikely(x)    __builtin_expect(!!(x), 0)
-#endif
 namespace  {
 
     struct datachunk // POD type
@@ -84,6 +80,27 @@ protected:
     static inline bool is_utf8_sequence(const unsigned char d) { return ((d >> 6) == 2); }
 
 
+    void vec_utf8heuristics(const char* it, size_t len) __attribute__ ((__target__ ("sse4.1")))
+    {
+        size_t result = 0;
+
+        const __m128i zeros = _mm_setzero_si128();
+        __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(it));
+        unsigned test = 0;
+        for (/**/; /**/; mem++, result += 16) {
+
+            const __m128i data = _mm_loadu_si128(mem);
+            const __m128i cmp  = _mm_cmpeq_epi8(data, zeros);
+
+            if (!_mm_testc_si128(zeros, cmp)) {
+
+                const auto mask = _mm_movemask_epi8(cmp);
+                test = result + ffs(mask);
+                break;
+            }
+        }
+    }
+
     /**
      * @brief utf8heuristics
      * @param predicts the broken UTF stream
@@ -107,7 +124,6 @@ protected:
 
                 if (idx == s)
                 {
-
                     /* all ok increment index for the next utf8 */
                     for (size_t i = 0; i < idx; i++) {
                             m_fixData += it[stridx + i];//refill
@@ -222,6 +238,7 @@ public:
 
     void resolve()
     {
+//        vec_utf8heuristics(p_data, m_size);
         utf8heuristics(p_data, m_size);
     }
 };
