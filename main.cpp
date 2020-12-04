@@ -5,44 +5,48 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring> //memset
+
 #include <nmmintrin.h>
-#include <bits/stdc++.h>
 
 using namespace std;
 
+#ifdef WIN32
+#define likely(x)      __builtin_expect(!!(x), 1)
+#define unlikely(x)    __builtin_expect(!!(x), 0)
+#endif
 namespace  {
 
-    struct datachunk // POD type
-    {
-        char* data;
-        size_t size;
-    };
+struct datachunk // POD type
+{
+    char* data;
+    size_t size;
+};
 
-    char* load_data(const char* fname, size_t* outsize)
-    {
-        FILE* fp = fopen(fname, "rb");
-        if (!fp) return NULL;
-        fseek(fp, 0, SEEK_END);
+char* load_data(const char* fname, size_t* outsize)
+{
+    FILE* fp = fopen(fname, "rb");
+    if (!fp) return NULL;
+    fseek(fp, 0, SEEK_END);
 
-        size_t len = ftell(fp), n = 0;
-        rewind(fp);
-        char* dat = (char*)malloc(sizeof(char) * len);
-        *outsize = len;
-        if (!dat) { fclose(fp); return  NULL;}
-        for(n = fread(dat, sizeof(char),  len, fp); n < len;)
-        {
-            n += fread(dat, sizeof(char),  len-n, fp);
-        }
-        fclose(fp);
-        return  dat;
+    size_t len = ftell(fp), n = 0;
+    rewind(fp);
+    char* dat = (char*)malloc(sizeof(char) * len);
+    *outsize = len;
+    if (!dat) { fclose(fp); return  NULL;}
+    for(n = fread(dat, sizeof(char),  len, fp); n < len;)
+    {
+        n += fread(dat, sizeof(char),  len-n, fp);
     }
+    fclose(fp);
+    return  dat;
+}
 
-    struct datachunk load_data_ex(const char* fname)
-    {
-        struct datachunk d;
-        d.data = load_data(fname, &d.size);
-        return d;
-    }
+struct datachunk load_data_ex(const char* fname)
+{
+    struct datachunk d;
+    d.data = load_data(fname, &d.size);
+    return d;
+}
 
 }
 
@@ -69,7 +73,7 @@ class UtfSolver
         UTF6,
         SIZE = UNKNOWN + UTF6
     };
-protected:
+private:
     const char* p_data; // aggregation
 
     std::string m_fixData;
@@ -79,27 +83,6 @@ protected:
 
     static inline bool is_utf8_sequence(const unsigned char d) { return ((d >> 6) == 2); }
 
-
-    void vec_utf8heuristics(const char* it, size_t len) __attribute__ ((__target__ ("sse4.1")))
-    {
-        size_t result = 0;
-
-        const __m128i zeros = _mm_setzero_si128();
-        __m128i* mem = reinterpret_cast<__m128i*>(const_cast<char*>(it));
-        unsigned test = 0;
-        for (/**/; /**/; mem++, result += 16) {
-
-            const __m128i data = _mm_loadu_si128(mem);
-            const __m128i cmp  = _mm_cmpeq_epi8(data, zeros);
-
-            if (!_mm_testc_si128(zeros, cmp)) {
-
-                const auto mask = _mm_movemask_epi8(cmp);
-                test = result + ffs(mask);
-                break;
-            }
-        }
-    }
 
     /**
      * @brief utf8heuristics
@@ -124,23 +107,25 @@ protected:
 
                 if (idx == s)
                 {
+
                     /* all ok increment index for the next utf8 */
                     for (size_t i = 0; i < idx; i++) {
-                            m_fixData += it[stridx + i];//refill
+                        m_fixData += it[stridx + i];//refill
                     }
                     stridx += idx; // go to next
                 }
                 else
                 {
-                    encode(it + stridx, m_size-stridx, m_fixData);
-                    stridx += s;
+                    //size_t n = stridx + s > m_size ? m_size - stridx : idx; //defensive check
+                    encode(it + stridx, idx, m_fixData);
+                    stridx += idx;
                 }
             }
             else
             {
                 // case 1:
                 //if begin is broken [x,1,2,3,4...... n] then h+x will have to encode n seqence till it's an utf sequence
-                    // case 2:
+                // case 2:
                 // if somewhere is broken [1...... x,1,2,3....n] then x+j will point to that part and i count will encode n bytes
                 // case 3: at end - shall be the same as 2
                 tmpidx = stridx; //begin of a broken pattern
@@ -156,22 +141,34 @@ protected:
     {
         utfstate state = UTF1;
         if (_SUTF1(d))
+        {
             return  state;
-
-        if (_SUTF2(d)) {
+        }
+        if (_SUTF2(d))
+        {
             state = UTF2;
-        } else if (_SUTF3(d)) {
+        }
+        else if (_SUTF3(d))
+        {
             state = UTF3;
-        } else if (_SUTF4(d)) {
+        }
+        else if (_SUTF4(d))
+        {
             state = UTF4;
-        } else if (_SUTF5(d)) {
+        }
+        else if (_SUTF5(d))
+        {
             state = UTF5;
-        } else if (_SUTF6(d)) {
+        }
+        else if (_SUTF6(d))
+        {
             state = UTF6;
-        } else {
+        }
+        else
+        {
             state = UNKNOWN;
         }
-
+        //        printf("State is [%s]\r\n", gStates[(unsigned)state]);
         return state;
     }
 
@@ -185,16 +182,9 @@ protected:
      */
     virtual size_t validate_pattern_ex(const char* stream, utfstate state, size_t offset)
     {
-        bool isOk = true;
-        if (offset+state > m_size) return 0; //bound check
-        for (size_t i = 1; i < state; i++) {
-            if (!is_utf8_sequence(stream[i])) {
-                isOk = false;
-                break;
-            }
-        }
-
-        return  isOk ? (size_t)state : 0;
+        size_t i = 1;
+        for (i = 1; i < state && (i + offset) < m_size && is_utf8_sequence(stream[i]); i++) ;
+        return  i;
     }
 
     /**
@@ -221,12 +211,9 @@ public:
         m_fixData.reserve(1024);
     }
 
-    UtfSolver(const char* data, const size_t size) : p_data(data), m_size(size)
-    {
-        m_fixData.reserve(1024);
-    }
+    UtfSolver(const char* data, const size_t size) : p_data(data), m_size(size)  {}
 
-    virtual ~UtfSolver() /*noexcept*/ {} // not supported
+    ~UtfSolver() /*noexcept*/ {} // not supported
 
     const char* data() const { return p_data;  }
 
@@ -238,107 +225,96 @@ public:
 
     void resolve()
     {
-//        vec_utf8heuristics(p_data, m_size);
         utf8heuristics(p_data, m_size);
     }
 };
 
 
-
-void test_formatting(const char* fname)
-{
-    struct UtfSolverEx : public UtfSolver
-    {
-        UtfSolverEx(const std::string& data, const size_t size)
-            : UtfSolver{data, size} { }
-
-        UtfSolverEx(const char* data, const size_t size)
-            : UtfSolver{data, size} { }
-
-    protected:
-        virtual void encode(const char* it, size_t n, std::string& out) override
-        {
-            for (size_t i = 0; i < n; i++) {
-                char hexbuff[16]; /* lower size */
-                unsigned char t = (unsigned char)it[i];
-                memset(hexbuff, 0, sizeof(hexbuff));
-                snprintf(hexbuff, sizeof(hexbuff), "[%d]", t);
-                out.append(hexbuff);
-            }
-        }
-    };
-
-
-    std::cout << "Test overriden formatting...\r\n";
-    struct datachunk d = load_data_ex(fname);
-    if (d.data) {
-        printf("Data ok\r\n");
-        UtfSolverEx solver {d.data, d.size};
-        solver.resolve();
-        std::cout << "[fixed: ]" << solver.fixed();
-        std::cout << "\r\n";
-    }
-}
-
-
 void test(const char* fname)
 {
-
-//    puts("----- begin test  ------");
+    //    puts("----- begin test  ------");
     struct datachunk d = load_data_ex(fname);
     if (d.data) {
         printf("Data ok\r\n");
+
 
         UtfSolver solver{d.data, d.size};
 
-        std::cout << "[broken:] " << solver.data() << "\r\n";
+        std::cout << "[broken:]" << solver.data() << "\r\n";
 
         solver.resolve();
-        std::cout << "[fixed:] " << solver.fixed() << "\r\n";
+        std::cout << "[fixed:]" << solver.fixed() << "\r\n";
+
 
         UtfSolver validator {solver.fixed(), solver.size2()};
 
         validator.resolve();
 
-        std::cout << "[check:] " << validator.fixed() << "\r\n";
+        std::cout << "[check:]" << validator.fixed() << "\r\n";
+
 
     } else {
         printf("err in data\r\n");
     }
     free(d.data);
-//    puts("----- end test ------");
+    //    puts("----- end test ------");
 }
+
+
+
+void test_raw()
+{
+
+    char data[9] = {0};
+    data[0] = 'a';
+    data[1] = 'a';
+    data[2] = 'o';
+    data[3] = 'p';
+    data[4] = 'a';
+    data[5] = 'b';
+    data[6] = 'c';
+    data[7] |= (7 << 5);
+    data[8] |= (1 << 7);// = 'p';
+
+
+    UtfSolver solver{data, sizeof(data)};
+
+    solver.resolve();
+
+    std::cout << solver.fixed() << "\r\n";
+
+
+}
+
 
 int main(void)
 {
-#if 1
+#if 0
 
-    test("test100.txt");
-    test_formatting("test100.txt");
-    puts("---------------------------------------------------------");
-    test("test99.txt");
-    test_formatting("test99.txt");
-    puts("---------------------------------------------------------");
-    //test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
-    //puts("---------------------------------------------------------");
-
-    test("data_err.txt");
-    test_formatting("data_err.txt");
-    puts("---------------------------------------------------------");
-
-    //test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
-    //puts("---------------------------------------------------------");
-
-#else
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
     puts("---------------------------------------------------------");
     test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
     puts("---------------------------------------------------------");
-//    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
-//    puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    puts("---------------------------------------------------------");
+
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
+    puts("---------------------------------------------------------");
+
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
     puts("---------------------------------------------------------");
 
 #endif
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
+    puts("---------------------------------------------------------");
+    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    //    puts("---------------------------------------------------------");
+    //    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
+    //    puts("---------------------------------------------------------");
+
+    test_raw();
+
     return 0;
 }
