@@ -10,45 +10,40 @@
 
 using namespace std;
 
-#ifdef WIN32
-#define likely(x)      __builtin_expect(!!(x), 1)
-#define unlikely(x)    __builtin_expect(!!(x), 0)
-#endif
 namespace  {
 
-struct datachunk // POD type
-{
-    char* data;
-    size_t size;
-};
-
-char* load_data(const char* fname, size_t* outsize)
-{
-    FILE* fp = fopen(fname, "rb");
-    if (!fp) return NULL;
-    fseek(fp, 0, SEEK_END);
-
-    size_t len = ftell(fp), n = 0;
-    rewind(fp);
-    char* dat = (char*)malloc(sizeof(char) * len);
-    *outsize = len;
-    if (!dat) { fclose(fp); return  NULL;}
-    for(n = fread(dat, sizeof(char),  len, fp); n < len;)
+    struct datachunk // POD type
     {
-        n += fread(dat, sizeof(char),  len-n, fp);
+        char* data;
+        size_t size;
+    };
+
+    char* load_data(const char* fname, size_t* outsize)
+    {
+        FILE* fp = fopen(fname, "rb");
+        if (!fp) return NULL;
+        fseek(fp, 0, SEEK_END);
+
+        size_t len = ftell(fp), n = 0;
+        rewind(fp);
+        char* dat = (char*)malloc(sizeof(char) * len);
+        *outsize = len;
+        if (!dat) { fclose(fp); return  NULL;}
+        for(n = fread(dat, sizeof(char),  len, fp); n < len;)
+        {
+            n += fread(dat, sizeof(char),  len-n, fp);
+        }
+        fclose(fp);
+        return  dat;
     }
-    fclose(fp);
-    return  dat;
-}
 
-struct datachunk load_data_ex(const char* fname)
-{
-    struct datachunk d;
-    d.data = load_data(fname, &d.size);
-    return d;
-}
-
-}
+    struct datachunk load_data_ex(const char* fname)
+    {
+        struct datachunk d;
+        d.data = load_data(fname, &d.size);
+        return d;
+    }
+} //ns
 
 //https://en.wikipedia.org/wiki/UTF-8
 
@@ -81,7 +76,7 @@ private:
     size_t m_size;
 
 
-    static inline bool is_utf8_sequence(const unsigned char d) { return ((d >> 6) == 2); }
+    static inline bool is_utf8_sequence(const unsigned char d) { return !(~(d >> 6) & 0x2); }
 
 
     /**
@@ -223,7 +218,7 @@ public:
 
     size_t size() const { return m_size;  }
 
-    void resolve()
+    void solve()
     {
         utf8heuristics(p_data, m_size);
     }
@@ -242,13 +237,13 @@ void test(const char* fname)
 
         std::cout << "[broken:]" << solver.data() << "\r\n";
 
-        solver.resolve();
+        solver.solve();
         std::cout << "[fixed:]" << solver.fixed() << "\r\n";
 
 
         UtfSolver validator {solver.fixed(), solver.size2()};
 
-        validator.resolve();
+        validator.solve();
 
         std::cout << "[check:]" << validator.fixed() << "\r\n";
 
@@ -262,10 +257,12 @@ void test(const char* fname)
 
 
 
+/**
+ * @brief test_raw: manual synthesis test
+ */
 void test_raw()
 {
-
-    char data[9] = {0};
+    char data[17] = {0};
     data[0] = 'a';
     data[1] = 'a';
     data[2] = 'o';
@@ -275,15 +272,25 @@ void test_raw()
     data[6] = 'c';
     data[7] |= (7 << 5);
     data[8] |= (1 << 7);// = 'p';
+    data[9] |= (1 << 7);// = 'p';
+    data[10] = 'i';
+    data[11] = 't';
+    data[12] = 's';
+    data[13] = 't';
+    data[14] |= (1 << 7);
+    data[15] |= (1 << 7);
+    data[16] |= (1 << 7);
 
 
     UtfSolver solver{data, sizeof(data)};
+    solver.solve();
 
-    solver.resolve();
+    UtfSolver sanity {solver.fixed(), solver.size2()};
+    sanity.solve();
 
-    std::cout << solver.fixed() << "\r\n";
-
-
+    std::cout << "[broken:]" << solver.data() << "\r\n";
+    std::cout << "[fixed:]" << solver.fixed() << "\r\n";
+    std::cout << "[check:]" << sanity.fixed() << "\r\n";
 }
 
 
@@ -305,11 +312,11 @@ int main(void)
     puts("---------------------------------------------------------");
 
 #endif
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
+    test("test100.txt");
     puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
+    test("test99.txt");
     puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
+    //test("data_bigmix.txt");
     //    puts("---------------------------------------------------------");
     //    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
     //    puts("---------------------------------------------------------");
