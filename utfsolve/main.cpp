@@ -1,12 +1,9 @@
 #include <iostream>
 #include <vector>
-#include <unordered_map>
 #include <ctype.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring> //memset
-
-#include <nmmintrin.h>
 
 using namespace std;
 
@@ -263,13 +260,13 @@ void test(const char* fname)
 void test_raw()
 {
     char data[17] = {0};
-    data[0] = 'a';
-    data[1] = 'a';
-    data[2] = 'o';
-    data[3] = 'p';
-    data[4] = 'a';
-    data[5] = 'b';
-    data[6] = 'c';
+    data[0] = 'v';
+    data[1] = 'l';
+    data[2] = 'a';
+    data[3] = 'd';
+    data[4] = 'i';
+    data[5] |= (1 << 7);
+    data[6] |= (1 << 7);
     data[7] |= (7 << 5);
     data[8] |= (1 << 7);// = 'p';
     data[9] |= (1 << 7);// = 'p';
@@ -312,11 +309,9 @@ int main(void)
     puts("---------------------------------------------------------");
 
 #endif
-    test("test100.txt");
+    test("utfgen.txt");
     puts("---------------------------------------------------------");
-    test("test99.txt");
-    puts("---------------------------------------------------------");
-    //test("data_bigmix.txt");
+     //test("data_bigmix.txt");
     //    puts("---------------------------------------------------------");
     //    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
     //    puts("---------------------------------------------------------");

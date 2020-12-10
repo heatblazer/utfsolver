@@ -1,3 +1,8 @@
-detects a broken utf8 patterns and fixes them
+Tools for generate random `utf8` patterns and tool for fixing them.
 
-build with `qtcreator` compiled with `Clang` and `gcc`
+See `utfsolve` project for `utf8` solver and escape sequence.
+
+See `utfgen` project for `utf8 random generator.
+
+
+И.Z.
