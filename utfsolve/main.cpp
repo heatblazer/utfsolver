@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring> //memset
+#include <fstream>
 
 using namespace std;
 
@@ -15,6 +16,16 @@ namespace  {
         size_t size;
     };
 
+    void wb(const char* data, size_t len)
+    {
+        const char* pbegin = data;
+        FILE* fp = fopen("out.txt", "wb");
+        if (fp) {
+            fwrite(pbegin, 1,len , fp);
+            fclose(fp);
+        }
+    }
+
     char* load_data(const char* fname, size_t* outsize)
     {
         FILE* fp = fopen(fname, "rb");
@@ -24,6 +35,7 @@ namespace  {
         size_t len = ftell(fp), n = 0;
         rewind(fp);
         char* dat = (char*)malloc(sizeof(char) * len);
+        char* pDat = dat;
         *outsize = len;
         if (!dat) { fclose(fp); return  NULL;}
         for(n = fread(dat, sizeof(char),  len, fp); n < len;)
@@ -31,7 +43,7 @@ namespace  {
             n += fread(dat, sizeof(char),  len-n, fp);
         }
         fclose(fp);
-        return  dat;
+        return  pDat;
     }
 
     struct datachunk load_data_ex(const char* fname)
@@ -165,6 +177,10 @@ private:
     }
 
 protected:
+
+//    virtual void separate(const char* stream, )
+
+
     // some seciton in case we need to override the default implementatnion ov pattern validation ...
     /**
      * @brief validate_pattern
@@ -253,6 +269,28 @@ void test(const char* fname)
 }
 
 
+void test_from_bin(const char* fname)
+{
+    struct UtfNoEnc : public UtfSolver
+    {
+        UtfNoEnc(const char* d, const size_t len) : UtfSolver{d, len} { }
+        UtfNoEnc(const std::string& d, const size_t len ) : UtfSolver{d, len} { }
+        // override
+    protected:
+        virtual void encode(const char* it, size_t n, std::string& out)
+        {
+            (void) it; (void) n;
+        }
+
+    };
+
+    size_t size;
+    char* data = load_data(fname, &size);
+    UtfNoEnc utf{data, size};
+    utf.solve();
+    wb(utf.fixed(), utf.size2());
+}
+
 
 /**
  * @brief test_raw: manual synthesis test
@@ -309,14 +347,14 @@ int main(void)
     puts("---------------------------------------------------------");
 
 #endif
-    test("paltalk.txt");
-    puts("---------------------------------------------------------");
+//    test("paltalk.txt");
+//    puts("---------------------------------------------------------");
      //test("data_bigmix.txt");
     //    puts("---------------------------------------------------------");
     //    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
     //    puts("---------------------------------------------------------");
 
-    test_raw();
-
+//    test_raw();
+//    test_from_bin("/media/storage/Builds/build-utfsolver-CLang-Debug/utfsolve/textdata/bindata");
     return 0;
 }
