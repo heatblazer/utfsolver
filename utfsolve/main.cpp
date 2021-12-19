@@ -331,30 +331,8 @@ void test_raw()
 
 int main(void)
 {
-#if 0
-
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test100.txt");
-    puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\test99.txt");
-    puts("---------------------------------------------------------");
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_bigmix.txt");
-    puts("---------------------------------------------------------");
-
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase.txt");
-    puts("---------------------------------------------------------");
-
-    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\testcase_output.txt");
-    puts("---------------------------------------------------------");
-
-#endif
-//    test("paltalk.txt");
-//    puts("---------------------------------------------------------");
-     //test("data_bigmix.txt");
-    //    puts("---------------------------------------------------------");
-    //    test("D:\\Dev\\git\\build-utfsolver-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\debug\\data_err.txt");
-    //    puts("---------------------------------------------------------");
 
 //    test_raw();
-//    test_from_bin("/media/storage/Builds/build-utfsolver-CLang-Debug/utfsolve/textdata/bindata");
+    test("/home/ilian/storage/Builds/build-utfsolver-CLang-Release/utfsolve/textdata/utfgen.txt");
     return 0;
 }
